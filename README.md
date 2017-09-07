@@ -2,6 +2,8 @@
 
 This repo contains the code for the results-viewing portion of our Senior Design project
 
+A map with the info overlayed. Showing trends through color or something similar.
+
 # Project Description
 
 Counties levy a tax on a home to pay for schools, libraries, roads, and many other things the community needs. The question is, does everyone pay their fair share?
