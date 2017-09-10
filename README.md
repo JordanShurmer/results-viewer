@@ -1,8 +1,24 @@
 # Results Viewer 👓
 
-This repo contains the code for the results-viewing portion of our Senior Design project
+This repo contains the code for the results-viewing portion of our Senior Design project.
 
-A map with the info overlayed. Showing trends through color or something similar.
+## Goals
+
+The goal is to present the data in a creative and meaningful way. 
+
+* A map with the info overlayed
+  * Heatmap of trends that we discover
+  
+  
+## Viewing the results
+
+Currently it is all contained in the one file [results.html](/results.html).
+
+Simple open that file in any modern browser.
+  
+## Implementation Details
+
+This is set up to use the [Google Maps API](https://developers.google.com/maps/documentation/javascript/?authuser=1). The API key came from Jordan Shurmer's `vols.utk.edu` account.
 
 # Project Description
 

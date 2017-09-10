@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+
+  <title>Property Tax Assessment</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+  <meta charset="utf-8"/>
+
+  <style>
+    #map {
+      height: 500px;
+    }
+
+    .container {
+      width: 90%;
+      margin: auto;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Property Tax Assessment Map</h1>
+
+  <div id="map"></div>
+</div>
+
+
+<script>
+  //Improve mobile map viewing
+  if (navigator.userAgent.indexOf('iPhone') !== -1 || navigator.userAgent.indexOf('Android')
+      !== -1) {
+    let mapdiv = document.getElementById("map");
+    mapdiv.style.width = '100%';
+    mapdiv.style.height = '100%';
+  }
+
+  function initMap() {
+    let map = new google.maps.Map(document.getElementById('map'),
+        {
+          zoom: 12,
+          center: new google.maps.LatLng(35.966566, -83.939979),
+          mapTypeId: 'roadmap' //roadmap||satellite||hybrid||terrain
+        }
+    );
+  }
+</script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAmSCxFNRZGuyLrHeYrdtfMV-BJDekTEiA&callback=initMap" async defer></script>
+
+</body>
+</html>
