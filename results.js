@@ -1,10 +1,3 @@
-//util function
-const RANGE = (a, b) => Array.from((function* (x, y) {
-  while (x <= y) {
-    yield x++;
-  }
-})(a, b));
-
 //Improve mobile map viewing
 if (navigator.userAgent.indexOf('iPhone') !== -1
     || navigator.userAgent.indexOf('Android') !== -1) {
@@ -14,19 +7,192 @@ if (navigator.userAgent.indexOf('iPhone') !== -1
 }
 
 /**
- * This is the callback function used by the google maps code
+ * This is the callback function used by the google maps code.
+ * I.e. This function will get invoked after the google JS loads
  */
 function initMap() {
+  //create a greyed-out map
+  let grayMap = new google.maps.StyledMapType(
+      [
+        {
+          "elementType": "geometry",
+          "stylers": [
+            {
+              "color": "#f5f5f5"
+            }
+          ]
+        },
+        {
+          "elementType": "labels.icon",
+          "stylers": [
+            {
+              "visibility": "off"
+            }
+          ]
+        },
+        {
+          "elementType": "labels.text.fill",
+          "stylers": [
+            {
+              "color": "#616161"
+            }
+          ]
+        },
+        {
+          "elementType": "labels.text.stroke",
+          "stylers": [
+            {
+              "color": "#f5f5f5"
+            }
+          ]
+        },
+        {
+          "featureType": "administrative.land_parcel",
+          "elementType": "labels.text.fill",
+          "stylers": [
+            {
+              "color": "#bdbdbd"
+            }
+          ]
+        },
+        {
+          "featureType": "poi",
+          "elementType": "geometry",
+          "stylers": [
+            {
+              "color": "#eeeeee"
+            }
+          ]
+        },
+        {
+          "featureType": "poi",
+          "elementType": "labels.text.fill",
+          "stylers": [
+            {
+              "color": "#757575"
+            }
+          ]
+        },
+        {
+          "featureType": "poi.park",
+          "elementType": "geometry",
+          "stylers": [
+            {
+              "color": "#e5e5e5"
+            }
+          ]
+        },
+        {
+          "featureType": "poi.park",
+          "elementType": "labels.text.fill",
+          "stylers": [
+            {
+              "color": "#9e9e9e"
+            }
+          ]
+        },
+        {
+          "featureType": "road",
+          "elementType": "geometry",
+          "stylers": [
+            {
+              "color": "#ffffff"
+            }
+          ]
+        },
+        {
+          "featureType": "road.arterial",
+          "elementType": "labels.text.fill",
+          "stylers": [
+            {
+              "color": "#757575"
+            }
+          ]
+        },
+        {
+          "featureType": "road.highway",
+          "elementType": "geometry",
+          "stylers": [
+            {
+              "color": "#dadada"
+            }
+          ]
+        },
+        {
+          "featureType": "road.highway",
+          "elementType": "labels.text.fill",
+          "stylers": [
+            {
+              "color": "#616161"
+            }
+          ]
+        },
+        {
+          "featureType": "road.local",
+          "elementType": "labels.text.fill",
+          "stylers": [
+            {
+              "color": "#9e9e9e"
+            }
+          ]
+        },
+        {
+          "featureType": "transit.line",
+          "elementType": "geometry",
+          "stylers": [
+            {
+              "color": "#e5e5e5"
+            }
+          ]
+        },
+        {
+          "featureType": "transit.station",
+          "elementType": "geometry",
+          "stylers": [
+            {
+              "color": "#eeeeee"
+            }
+          ]
+        },
+        {
+          "featureType": "water",
+          "elementType": "geometry",
+          "stylers": [
+            {
+              "color": "#c9c9c9"
+            }
+          ]
+        },
+        {
+          "featureType": "water",
+          "elementType": "labels.text.fill",
+          "stylers": [
+            {
+              "color": "#9e9e9e"
+            }
+          ]
+        }
+      ],
+      {name: 'Gray Map'}
+  );
+
   //create the map
   let map = new google.maps.Map(document.getElementById('map'),
       {
         zoom: 13,
         center: new google.maps.LatLng(35.966566, -83.939979),
-        mapTypeId: 'roadmap' //roadmap||satellite||hybrid||terrain
-      }
-  );
+        mapTypeControlOptions: {
+          mapTypeIds: ['roadmap', 'satellite', 'hybrid', 'terrain',
+            'gray_map']
+        }
+      });
 
-  //AWS Stuffages
+  //Associate the gray map with the MapTypeId and set it to display.
+  map.mapTypes.set('gray_map', grayMap);
+  map.setMapTypeId('gray_map');
+
+
+  //AWS Connection
   let dynamodb = new AWS.DynamoDB({
     accessKeyId: "AKIAJRC2BMR6AP5KF3NA",
     secretAccessKey: "CIN6PGDk7KFAjdB+SSH+YTW5pECqb/0SOcPWiiXw",
@@ -35,23 +201,20 @@ function initMap() {
   });
 
 
+  //load data from dynamo
   let allAddrs = [];
-  // TODO: replace this with real data pulled in from dynamodb
   dynamodb.scan({TableName: "ViewerData"}, (error, data) => {
     if (error !== null) {
+      //TODO: display this on page in a useful way somehow
       console.error("DynamoDB Error", error);
     } else {
       console.info("Successful DynamoDB request");
       console.debug(data);
-      data.Items.forEach(item => {
-        allAddrs.push(
-            {
-              location: new google.maps.LatLng(
-                  item.lat.S, item.lng.S),
-              weight: item.appraised.S
-            }
-        )
-      });
+
+      data.Items.forEach(item => allAddrs.push({
+        location: new google.maps.LatLng(item.lat.S, item.lng.S),
+        weight: item.appraised.S //TODO: create way to change the value used
+      }));
 
       let heatmap = new google.maps.visualization.HeatmapLayer({
         data: allAddrs,
@@ -59,6 +222,5 @@ function initMap() {
       });
     }
   });
-
 
 }
