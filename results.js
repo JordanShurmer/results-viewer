@@ -26,25 +26,39 @@ function initMap() {
       }
   );
 
-  //some sample heatmap data from Gay street addresses
-  // TODO: replace this with real data pulled in from dynamodb
-  let heatmap = new google.maps.visualization.HeatmapLayer({
-    "data": [
-      new google.maps.LatLng(35.9661714, -83.91904110000002),
-      new google.maps.LatLng(35.966316, -83.91854799999999),
-      new google.maps.LatLng(35.9660563, -83.9191085),
-      new google.maps.LatLng(35.9660652, -83.91876960000002),
-      new google.maps.LatLng(35.9660871, -83.91895149999999),
-      new google.maps.LatLng(35.9660369, -83.91875249999998),
-      new google.maps.LatLng(35.965928, -83.919037),
-      new google.maps.LatLng(35.9660523, -83.918342),
-      new google.maps.LatLng(35.9660087, -83.91889100000003),
-      new google.maps.LatLng(35.9659805, -83.91871839999999),
-      new google.maps.LatLng(35.9659629, -83.9188729),
-      new google.maps.LatLng(35.9643597, -83.9177525),
-      new google.maps.LatLng(35.9626807, -83.91676919999998)
-    ],
-    map: map
+  //AWS Stuffages
+  let dynamodb = new AWS.DynamoDB({
+    accessKeyId: "AKIAJRC2BMR6AP5KF3NA",
+    secretAccessKey: "CIN6PGDk7KFAjdB+SSH+YTW5pECqb/0SOcPWiiXw",
+    region: "us-east-1",
+    logger: console
   });
+
+
+  let allAddrs = [];
+  // TODO: replace this with real data pulled in from dynamodb
+  dynamodb.scan({TableName: "ViewerData"}, (error, data) => {
+    if (error !== null) {
+      console.error("DynamoDB Error", error);
+    } else {
+      console.info("Successful DynamoDB request");
+      console.debug(data);
+      data.Items.forEach(item => {
+        allAddrs.push(
+            {
+              location: new google.maps.LatLng(
+                  item.lat.S, item.lng.S),
+              weight: item.appraised.S
+            }
+        )
+      });
+
+      let heatmap = new google.maps.visualization.HeatmapLayer({
+        data: allAddrs,
+        map: map
+      });
+    }
+  });
+
 
 }
