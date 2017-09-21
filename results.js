@@ -1,7 +1,7 @@
 //Some globals
 let heatmap, allData;
 
-//Improve mobile map viewing
+// Improve mobile map viewing
 if (navigator.userAgent.indexOf('iPhone') !== -1
     || navigator.userAgent.indexOf('Android') !== -1) {
   let mapdiv = document.getElementById("map");
@@ -9,13 +9,19 @@ if (navigator.userAgent.indexOf('iPhone') !== -1
   mapdiv.style.height = '100%';
 }
 
+//AWS Connection
+const dynamodb = new AWS.DynamoDB({
+  accessKeyId: "AKIAJRPDORRULGRBZLQA",
+  secretAccessKey: "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",
+  region: "us-east-1",
+  logger: console
+});
+
 /**
  * This is the callback function used by the google maps code.
  * I.e. This function will get invoked after the google JS loads
  */
 function initMap() {
-  //create a greyed-out map
-
   //create the map
   let map = new google.maps.Map(document.getElementById('map'),
       {
@@ -31,13 +37,11 @@ function initMap() {
   map.mapTypes.set('gray_map', new google.maps.StyledMapType(MAPSTYLES.gray, {name: 'Gray Map'}));
   map.setMapTypeId('gray_map');
 
-  //AWS Connection
-  let dynamodb = new AWS.DynamoDB({
-    accessKeyId: "AKIAJRPDORRULGRBZLQA",
-    secretAccessKey: "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",
-    region: "us-east-1",
-    logger: console
+  //Build the Heatmap layer
+  heatmap = new google.maps.visualization.HeatmapLayer({
+    map: map
   });
+
 
   //load data from dynamo
   dynamodb.scan({TableName: "ViewerData"}, (error, data) => {
@@ -50,12 +54,26 @@ function initMap() {
       console.info("Successful DynamoDB request");
       console.debug(data);
 
-      //Save the data
+      //Cache the data
       allData = data.Items;
 
-      //Build the Heatmap layer
-      heatmap = new google.maps.visualization.HeatmapLayer({
-        map: map
+      //Add the butons
+      console.info("Generating heatmap buttons");
+      let buttonContainer = document.getElementById("heatmap-buttons");
+      let template = document.getElementById("T-heatmap-button");
+      let allAttributes = {};
+      allData.filter(item => item.lat.S && item.lng.S)
+      .forEach(item => {
+        Object.keys(item)
+        .filter(attribute => "parcelId" !== attribute && "lat" !== attribute && "lng" !== attribute)
+        .forEach(attribute => allAttributes[attribute] = true)
+      });
+      Object.keys(allAttributes).forEach(attribute => {
+        console.debug(`Adding ${attribute} button`);
+        let button = document.importNode(template.content, true).querySelector('button');
+        button.onclick = () => setHeatmapData(attribute);
+        button.innerText = attribute;
+        buttonContainer.appendChild(button);
       });
 
       //set the heatmap data
@@ -63,21 +81,24 @@ function initMap() {
     }
   });
 
+
 }
 
+
 function setHeatmapData(attributeName) {
-  let heatMapData = [];
+  let heatMapData = allData.filter(item => item.lat.S && item.lng.S)
   //Add each address to the list of addresses, with a weight coming from the attributeName passed in
-  allData.forEach(item => {
-    console.debug("Adding item to heatmap data", item);
-    heatMapData.push({
+  .map(item => {
+    return {
       location: new google.maps.LatLng(item.lat.S, item.lng.S),
       weight: item[attributeName].S
-    })
+    }
   });
 
-  console.debug("Setting heatmap data", heatMapData);
+  console.info("Setting heatmap data", heatMapData);
   heatmap.setData(heatMapData);
+
+
 }
 
 MAPSTYLES = {
