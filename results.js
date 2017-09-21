@@ -33,8 +33,8 @@ function initMap() {
 
   //AWS Connection
   let dynamodb = new AWS.DynamoDB({
-    accessKeyId: "AKIAJRC2BMR6AP5KF3NA",
-    secretAccessKey: "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",
+    accessKeyId: "AKIAJRPDORRULGRBZLQA",
+    secretAccessKey: "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",
     region: "us-east-1",
     logger: console
   });
