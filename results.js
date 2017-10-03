@@ -25,7 +25,7 @@ function initMap() {
   //create the map
   let map = new google.maps.Map(document.getElementById('map'),
       {
-        zoom: 13,
+        zoom: 11,
         center: new google.maps.LatLng(35.966566, -83.939979),
         mapTypeControlOptions: {
           mapTypeIds: ['roadmap', 'satellite', 'hybrid', 'terrain',
@@ -57,7 +57,7 @@ function initMap() {
       //Cache the data
       allData = data.Items;
 
-      //Add the butons
+      //Add the buttons
       console.info("Generating heatmap buttons");
       let buttonContainer = document.getElementById("heatmap-buttons");
       let template = document.getElementById("T-heatmap-button");
@@ -77,7 +77,7 @@ function initMap() {
       });
 
       //set the heatmap data
-      setHeatmapData('assessed');
+      setHeatmapData('Assessment');
     }
   });
 
@@ -87,11 +87,13 @@ function initMap() {
 
 function setHeatmapData(attributeName) {
   let heatMapData = allData.filter(item => item.lat.S && item.lng.S)
+  .filter(item => item.hasOwnProperty(attributeName))
+  .filter(item => item[attributeName].S !== 'Unknown')
   //Add each address to the list of addresses, with a weight coming from the attributeName passed in
   .map(item => {
     return {
       location: new google.maps.LatLng(item.lat.S, item.lng.S),
-      weight: item[attributeName].S
+      weight: parseFloat(item[attributeName].S)
     }
   });
 
