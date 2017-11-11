@@ -9,40 +9,118 @@
   <meta charset="utf-8"/>
 
   <style>
-    #info {
-      height: 100%;
-      width: 21%;
-      float: left;
-      margin-left: 1%;
-    }
-    #map {
-      height: 100%;
-      width: 78%;
-      float: left;
-    }
+    @import url('https://fonts.googleapis.com/css?family=Open+Sans|Spectral');
+
     html, body {
+      font-family: 'Spectral', serif;
+      box-sizing: border-box;
       height: 100%;
       margin: 0;
+    }
+
+    *, *:before, *:after {
+      box-sizing: inherit
+    }
+
+    #sdt5 {
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      right: 0;
+    }
+
+    #top {
+      position: absolute;
+      height: 3.75em;
+      padding: 1.25em;
+      line-height: 2.5em;
+      width: 100%;
+      border-bottom: 0.0625em solid rgba(0, 0, 0, 0.1);
+    }
+
+    #top h1 {
+      margin: 0;
+    }
+
+    #bottom {
+      position: absolute;
+      top: 3.75em;
+      bottom: 0;
+      width: 100%;
+    }
+
+    #left {
+      height: 100%;
+      width: 21%;
+      position: absolute;
+      margin-left: 1%;
+    }
+
+    #map {
+      position: absolute;
+      width: 79%;
+      height: 100%;
+      right: 0;
+    }
+
+    .heatmap-button {
+      outline: none;
+      font-family: 'Open+Sans', sans-serif;
+      margin: 3px;
+      background: #e0e0e0;
+      cursor: pointer;
+      border: 0;
+      padding: .4em .8em;
+      text-rendering: optimizeLegibility;
+      font-size: inherit;
+      font-weight: 300;
+      color: inherit
+    }
+
+    .heatmap-button.chosen {
+      background: #c7eec7 !important;
+    }
+
+    .heatmap-button:hover {
+      background: #e6e6e6
+    }
+
+    .heatmap-button:active {
+      background: #d6d6d6
     }
   </style>
 </head>
 <body>
+<div id="sdt5">
 
-<div id="info">
-  <h1>Property Tax Assessment Map</h1>
+  <div id="top">
+    <h1>Property Tax Assessment Map</h1>
+  </div>
 
-  <div id="heatmap-buttons">
-    <template id="T-heatmap-button">
-      <button class="heatmap-button">placeholder</button>
-    </template>
+  <div id="bottom">
+
+    <div id="left">
+
+      <template id="T-heatmap-button">
+        <button class="heatmap-button">placeholder</button>
+      </template>
+
+      <h2>Data</h2>
+      <div id="heatmap-buttons">
+      </div>
+      <h2>Additional Data</h2>
+      <div id="additional-heatmap-buttons">
+      </div>
+
+    </div>
+
+    <div id="map"></div>
   </div>
 
 </div>
-
-<div id="map"></div>
-
 <script defer src="aws.dynamodb.2012-08-10.min.js"></script>
-<script defer src="results.js" ></script>
+<script defer src="results.js"></script>
 <script
     src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAmSCxFNRZGuyLrHeYrdtfMV-BJDekTEiA&libraries=visualization&callback=initMap"
     async defer></script>

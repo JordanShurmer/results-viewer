@@ -25,8 +25,8 @@ function initMap() {
   //create the map
   let map = new google.maps.Map(document.getElementById('map'),
       {
-        zoom: 11,
-        center: new google.maps.LatLng(35.966566, -83.939979),
+        zoom: 14,
+        center: new google.maps.LatLng(36.099546, -83.930513),
         mapTypeControlOptions: {
           mapTypeIds: ['roadmap', 'satellite', 'hybrid', 'terrain',
             'gray_map']
@@ -39,7 +39,7 @@ function initMap() {
 
   //Build the Heatmap layer
   heatmap = new google.maps.visualization.HeatmapLayer({
-    map: map
+    map: map,
   });
 
 
@@ -60,6 +60,7 @@ function initMap() {
       //Add the buttons
       console.info("Generating heatmap buttons");
       let buttonContainer = document.getElementById("heatmap-buttons");
+      let additionalButtonsContainer = document.getElementById("additional-heatmap-buttons");
       let template = document.getElementById("T-heatmap-button");
       let allAttributes = {};
       allData.filter(item => item.lat.S && item.lng.S)
@@ -71,13 +72,21 @@ function initMap() {
       Object.keys(allAttributes).forEach(attribute => {
         console.debug(`Adding ${attribute} button`);
         let button = document.importNode(template.content, true).querySelector('button');
-        button.onclick = () => setHeatmapData(attribute);
         button.innerText = attribute;
-        buttonContainer.appendChild(button);
+        button.onclick = () => setHeatmapData(attribute);
+        button.dataset['attribute'] = attribute;
+        if ('Appraisal' === attribute || 'Assessment' === attribute) {
+          if ('Appraisal' === attribute) {
+            button.classList.add('chosen');
+          }
+          buttonContainer.appendChild(button);
+        } else {
+          additionalButtonsContainer.appendChild(button);
+        }
       });
 
       //set the heatmap data
-      setHeatmapData('Assessment');
+      setHeatmapData('Appraisal');
     }
   });
 
@@ -95,15 +104,17 @@ function setHeatmapData(attributeName) {
       location: new google.maps.LatLng(item.lat.S, item.lng.S),
       weight: parseFloat(item[attributeName].S)
     }
-  });
+  }).filter(item => !isNaN(item.weight));
 
   console.info("Setting heatmap data", heatMapData);
   heatmap.setData(heatMapData);
 
+  document.querySelectorAll('button.chosen').forEach(button => button.classList.remove('chosen'));
+  document.querySelector(`button[data-attribute=${attributeName}]`).classList.add('chosen');
 
 }
 
-MAPSTYLES = {
+const MAPSTYLES = {
   gray: [
     {
       "elementType": "geometry",
