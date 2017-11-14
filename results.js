@@ -1,5 +1,7 @@
 //Some globals
 let heatmap, allData;
+let allAttributes = {};
+const MAX_VALUE = 300000;
 
 // Improve mobile map viewing
 if (navigator.userAgent.indexOf('iPhone') !== -1
@@ -53,20 +55,39 @@ function initMap() {
       console.info("Successful DynamoDB request");
       console.debug(data);
 
-      //Cache the data
-      allData = data.Items;
+      //Cache the "valid" data
+      allData = data.Items.filter(item => item.lat.S && item.lng.S && item.Appraisal && item.AssessmentRatio)
+      .filter(
+          item => !isNaN(parseFloat(item['Appraisal'].S.replace(',', '')))
+              && parseFloat(item['Appraisal'].S.replace(',', '')) < MAX_VALUE
+      ).filter(
+          item => !isNaN(parseFloat(item['Assessment'].S.replace(',', '')))
+              && parseFloat(item['Assessment'].S.replace(',', '')) < MAX_VALUE
+      ).filter(
+          item => !item.hasOwnProperty('Bathrooms')
+              || !isNaN(parseFloat(item['Bathrooms'].S.replace(',', '')))
+              && parseFloat(item['Bathrooms'].S.replace(',', '')) < 5
+      ).filter(
+          item => !item.hasOwnProperty('Zestimate')
+              || !isNaN(parseFloat(item['Zestimate'].S.replace(',', '')))
+              && parseFloat(item['Zestimate'].S.replace(',', '')) < MAX_VALUE
+      ).filter(
+          item => !isNaN(parseFloat(item['AssessmentRatio'].S))
+              && parseFloat(item['AssessmentRatio'].S) < 1);
 
       //Add the buttons
       console.info("Generating heatmap buttons");
       let buttonContainer = document.getElementById("heatmap-buttons");
       let additionalButtonsContainer = document.getElementById("additional-heatmap-buttons");
       let template = document.getElementById("T-heatmap-button");
-      let allAttributes = {};
-      allData.filter(item => item.lat.S && item.lng.S)
-      .forEach(item => {
+      allData.forEach(item => {
+        item.AssessmentRatio.S = `${parseFloat(item.AssessmentRatio.S) * 100}`;
         Object.keys(item)
         .filter(attribute => "parcelId" !== attribute && "lat" !== attribute && "lng" !== attribute)
-        .forEach(attribute => allAttributes[attribute] = true)
+        .forEach(attribute => {
+          let currentMax = parseFloat(allAttributes[attribute]) || 0;
+          allAttributes[attribute] = Math.max(currentMax, parseFloat(item[attribute].S.replace(',', '')) || 0);
+        })
       });
       Object.keys(allAttributes).forEach(attribute => {
         console.debug(`Adding ${attribute} button`);
@@ -98,8 +119,6 @@ function setHeatmapData(attributeName) {
   let heatMapData = allData.filter(item => item.lat.S && item.lng.S)
   .filter(item => item.hasOwnProperty(attributeName))
   .filter(item => !isNaN(parseFloat(item[attributeName].S)))
-  .filter(item => (attributeName !== 'Appraisal' && attributeName !== 'Assessment') || parseFloat(item[attributeName].S.replace(',', '')) < 300000)
-  .filter(item => attributeName !== 'AssessmentRatio' || parseFloat(item[attributeName].S) < 1)
   //Add each address to the list of addresses, with a weight coming from the attributeName passed in
   .map(item => {
     return {
@@ -110,14 +129,19 @@ function setHeatmapData(attributeName) {
 
   let options = {
     data: heatMapData,
+    radius: 0.00032,
+    dissipating: false
   };
   if (attributeName === 'AssessmentRatio') {
-    console.debug("max intensity = 1");
-    options.maxIntensity = 1;
-  } else if (attributeName === 'Appraisal' || attributeName === 'Assessment') {
-    console.debug("max intensity = 300000");
-    options.maxIntensity = 300000;
-  }  else {
+    // console.debug("max intensity = 1");
+    options.dissipating = true;
+    options.radius = 7;
+    // options.maxIntensity = 1;
+  }
+  if (allAttributes.hasOwnProperty(attributeName)) {
+    console.debug(`max intensity = ${allAttributes[attributeName]}`);
+    options.maxIntensity = allAttributes[attributeName];
+  } else {
     console.debug("max intensity = 0");
     options.maxIntensity = 0;
   }
