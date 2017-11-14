@@ -42,7 +42,6 @@ function initMap() {
     map: map,
   });
 
-
   //load data from dynamo
   dynamodb.scan({TableName: "ViewerData"}, (error, data) => {
 
@@ -75,7 +74,10 @@ function initMap() {
         button.innerText = attribute;
         button.onclick = () => setHeatmapData(attribute);
         button.dataset['attribute'] = attribute;
-        if ('Appraisal' === attribute || 'Assessment' === attribute) {
+        if ('Appraisal' === attribute
+            || 'Assessment' === attribute
+            || 'AssessmentRatio' === attribute
+        ) {
           if ('Appraisal' === attribute) {
             button.classList.add('chosen');
           }
@@ -90,21 +92,21 @@ function initMap() {
     }
   });
 
-
 }
-
 
 function setHeatmapData(attributeName) {
   let heatMapData = allData.filter(item => item.lat.S && item.lng.S)
   .filter(item => item.hasOwnProperty(attributeName))
-  .filter(item => item[attributeName].S !== 'Unknown')
+  .filter(item => !isNaN(parseFloat(item[attributeName].S)))
+  .filter(item => (attributeName !== 'Appraisal' && attributeName !== 'Assessment') || parseFloat(item[attributeName].S) < 300000)
+  .filter(item => attributeName !== 'AssessmentRatio' || parseFloat(item[attributeName].S) < 1)
   //Add each address to the list of addresses, with a weight coming from the attributeName passed in
   .map(item => {
     return {
       location: new google.maps.LatLng(item.lat.S, item.lng.S),
       weight: parseFloat(item[attributeName].S)
     }
-  }).filter(item => !isNaN(item.weight));
+  });
 
   console.info("Setting heatmap data", heatMapData);
   heatmap.setData(heatMapData);
