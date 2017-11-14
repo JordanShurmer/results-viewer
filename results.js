@@ -98,18 +98,31 @@ function setHeatmapData(attributeName) {
   let heatMapData = allData.filter(item => item.lat.S && item.lng.S)
   .filter(item => item.hasOwnProperty(attributeName))
   .filter(item => !isNaN(parseFloat(item[attributeName].S)))
-  .filter(item => (attributeName !== 'Appraisal' && attributeName !== 'Assessment') || parseFloat(item[attributeName].S) < 300000)
+  .filter(item => (attributeName !== 'Appraisal' && attributeName !== 'Assessment') || parseFloat(item[attributeName].S.replace(',', '')) < 300000)
   .filter(item => attributeName !== 'AssessmentRatio' || parseFloat(item[attributeName].S) < 1)
   //Add each address to the list of addresses, with a weight coming from the attributeName passed in
   .map(item => {
     return {
       location: new google.maps.LatLng(item.lat.S, item.lng.S),
-      weight: parseFloat(item[attributeName].S)
+      weight: parseFloat(item[attributeName].S.replace(',', ''))
     }
   });
 
+  let options = {
+    data: heatMapData,
+  };
+  if (attributeName === 'AssessmentRatio') {
+    console.debug("max intensity = 1");
+    options.maxIntensity = 1;
+  } else if (attributeName === 'Appraisal' || attributeName === 'Assessment') {
+    console.debug("max intensity = 300000");
+    options.maxIntensity = 300000;
+  }  else {
+    console.debug("max intensity = 0");
+    options.maxIntensity = 0;
+  }
   console.info("Setting heatmap data", heatMapData);
-  heatmap.setData(heatMapData);
+  heatmap.setOptions(options);
 
   document.querySelectorAll('button.chosen').forEach(button => button.classList.remove('chosen'));
   document.querySelector(`button[data-attribute=${attributeName}]`).classList.add('chosen');
