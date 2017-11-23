@@ -1,5 +1,5 @@
 //Some globals
-let heatmap, allData;
+let heatmap, allData = [];
 let allAttributes = {};
 const MAX_VALUE = 300000;
 
@@ -19,6 +19,7 @@ const dynamodb = new AWS.DynamoDB({
   logger: console
 });
 
+const params = {TableName: "ViewerData"};
 /**
  * This is the callback function used by the google maps code.
  * I.e. This function will get invoked after the google JS loads
@@ -45,74 +46,86 @@ function initMap() {
   });
 
   //load data from dynamo
-  dynamodb.scan({TableName: "ViewerData"}, (error, data) => {
+  //Add the buttons
+  scanForData(() => {
+    console.info("Generating heatmap buttons");
+    let buttonContainer = document.getElementById("heatmap-buttons");
+    let additionalButtonsContainer = document.getElementById("additional-heatmap-buttons");
+    let template = document.getElementById("T-heatmap-button");
+    allData.forEach(item => {
+      item.AssessmentRatio.S = `${parseFloat(item.AssessmentRatio.S) * 100}`;
+      Object.keys(item)
+      .filter(attribute => "parcelId" !== attribute && "lat" !== attribute && "lng" !== attribute)
+      .forEach(attribute => {
+        let currentMax = parseFloat(allAttributes[attribute]) || 0;
+        allAttributes[attribute] = Math.max(currentMax, parseFloat(item[attribute].S.replace(',', '')) || 0);
+      })
+    });
+    Object.keys(allAttributes).forEach(attribute => {
+      console.debug(`Adding ${attribute} button`);
+      let button = document.importNode(template.content, true).querySelector('button');
+      button.innerText = attribute;
+      button.onclick = () => setHeatmapData(attribute);
+      button.dataset['attribute'] = attribute;
+      if ('Appraisal' === attribute
+          || 'Assessment' === attribute
+          || 'AssessmentRatio' === attribute
+      ) {
+        if ('Appraisal' === attribute) {
+          button.classList.add('chosen');
+        }
+        buttonContainer.appendChild(button);
+      } else {
+        additionalButtonsContainer.appendChild(button);
+      }
+    });
+
+    //set the heatmap data
+    setHeatmapData('Appraisal');
+  })
+
+}
+
+function scanForData(callback) {
+  dynamodb.scan(params, (error, result) => {
 
     if (error !== null) {
       //TODO: display this on page in a useful way somehow
       console.error("DynamoDB Error", error);
-
     } else {
       console.info("Successful DynamoDB request");
-      console.debug(data);
+      console.debug(result);
 
       //Cache the "valid" data
-      allData = data.Items.filter(item => item.lat.S && item.lng.S && item.Appraisal && item.AssessmentRatio)
-      .filter(
-          item => !isNaN(parseFloat(item['Appraisal'].S.replace(',', '')))
-              && parseFloat(item['Appraisal'].S.replace(',', '')) < MAX_VALUE
-      ).filter(
-          item => !isNaN(parseFloat(item['Assessment'].S.replace(',', '')))
-              && parseFloat(item['Assessment'].S.replace(',', '')) < MAX_VALUE
-      ).filter(
-          item => !item.hasOwnProperty('Bathrooms')
-              || !isNaN(parseFloat(item['Bathrooms'].S.replace(',', '')))
-              && parseFloat(item['Bathrooms'].S.replace(',', '')) < 5
-      ).filter(
-          item => !item.hasOwnProperty('Zestimate')
-              || !isNaN(parseFloat(item['Zestimate'].S.replace(',', '')))
-              && parseFloat(item['Zestimate'].S.replace(',', '')) < MAX_VALUE
-      ).filter(
-          item => !isNaN(parseFloat(item['AssessmentRatio'].S))
-              && parseFloat(item['AssessmentRatio'].S) < 1);
+      allData = allData.concat(
+          result.Items.filter(item => item.lat.S && item.lng.S && item.Appraisal && item.AssessmentRatio)
+          .filter(
+              item => !isNaN(parseFloat(item['Appraisal'].S.replace(',', '')))
+                  && parseFloat(item['Appraisal'].S.replace(',', '')) < MAX_VALUE
+          ).filter(
+              item => !isNaN(parseFloat(item['Assessment'].S.replace(',', '')))
+                  && parseFloat(item['Assessment'].S.replace(',', '')) < MAX_VALUE
+          ).filter(
+              item => !item.hasOwnProperty('Bathrooms')
+                  || !isNaN(parseFloat(item['Bathrooms'].S.replace(',', '')))
+                  && parseFloat(item['Bathrooms'].S.replace(',', '')) < 5
+          ).filter(
+              item => !item.hasOwnProperty('Zestimate')
+                  || !isNaN(parseFloat(item['Zestimate'].S.replace(',', '')))
+                  && parseFloat(item['Zestimate'].S.replace(',', '')) < MAX_VALUE
+          ).filter(
+              item => !isNaN(parseFloat(item['AssessmentRatio'].S))
+                  && parseFloat(item['AssessmentRatio'].S) < 1)
+      );
 
-      //Add the buttons
-      console.info("Generating heatmap buttons");
-      let buttonContainer = document.getElementById("heatmap-buttons");
-      let additionalButtonsContainer = document.getElementById("additional-heatmap-buttons");
-      let template = document.getElementById("T-heatmap-button");
-      allData.forEach(item => {
-        item.AssessmentRatio.S = `${parseFloat(item.AssessmentRatio.S) * 100}`;
-        Object.keys(item)
-        .filter(attribute => "parcelId" !== attribute && "lat" !== attribute && "lng" !== attribute)
-        .forEach(attribute => {
-          let currentMax = parseFloat(allAttributes[attribute]) || 0;
-          allAttributes[attribute] = Math.max(currentMax, parseFloat(item[attribute].S.replace(',', '')) || 0);
-        })
-      });
-      Object.keys(allAttributes).forEach(attribute => {
-        console.debug(`Adding ${attribute} button`);
-        let button = document.importNode(template.content, true).querySelector('button');
-        button.innerText = attribute;
-        button.onclick = () => setHeatmapData(attribute);
-        button.dataset['attribute'] = attribute;
-        if ('Appraisal' === attribute
-            || 'Assessment' === attribute
-            || 'AssessmentRatio' === attribute
-        ) {
-          if ('Appraisal' === attribute) {
-            button.classList.add('chosen');
-          }
-          buttonContainer.appendChild(button);
-        } else {
-          additionalButtonsContainer.appendChild(button);
-        }
-      });
-
-      //set the heatmap data
-      setHeatmapData('Appraisal');
+      if (result.LastEvaluatedKey) {
+        params.ExclusiveStartKey = result.LastEvaluatedKey;
+        scanForData(callback);
+      } else {
+        callback();
+      }
     }
   });
-
 }
 
 function setHeatmapData(attributeName) {
@@ -129,23 +142,13 @@ function setHeatmapData(attributeName) {
 
   let options = {
     data: heatMapData,
-    radius: 0.00032,
-    dissipating: false
   };
-  if (attributeName === 'AssessmentRatio') {
-    // console.debug("max intensity = 1");
-    options.dissipating = true;
-    options.radius = 7;
-    // options.maxIntensity = 1;
-  }
   if (allAttributes.hasOwnProperty(attributeName)) {
     console.debug(`max intensity = ${allAttributes[attributeName]}`);
     options.maxIntensity = allAttributes[attributeName];
   } else {
-    console.debug("max intensity = 0");
     options.maxIntensity = 0;
   }
-  console.info("Setting heatmap data", heatMapData);
   heatmap.setOptions(options);
 
   document.querySelectorAll('button.chosen').forEach(button => button.classList.remove('chosen'));
