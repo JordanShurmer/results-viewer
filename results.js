@@ -88,13 +88,16 @@ function initMap() {
 function reloadData() {
   //load data from DB
   if (db) {
+    allData = [];
     scanForData(() => {
       try {
         //add to the DB
         let objStore = db.transaction('all-data', "readwrite").objectStore('all-data');
-        allData.forEach((item) => {
-          objStore.put(item);
-        });
+        objStore.clear().onsuccess = () => {
+          allData.forEach((item) => {
+            objStore.put(item);
+          });
+        }
       } catch (e) {
         console.error("Index DB error", e);
       }
