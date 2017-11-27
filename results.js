@@ -20,11 +20,45 @@ const dynamodb = new AWS.DynamoDB({
 });
 
 const params = {TableName: "ViewerData"};
+
+//IndexdDB checks
+window.indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
+
+let db;
+
+function openDB(callback) {
+  let idbRequest;
+  try {
+    idbRequest = window.indexedDB.open('PropertyTaxAssessor', 3);
+  } catch (e) {
+    console.error("error opening", e);
+    throw e;
+  }
+  idbRequest.onupgradeneeded = (event) => {
+    db = event.target.result;
+
+    // Create an objectStore for this database
+    db.createObjectStore("all-data", {autoIncrement: true}).transaction.oncomplete = (event) => {
+      reloadData();
+    }
+  };
+
+  idbRequest.onsuccess = (event) => {
+    db = event.target.result;
+    db.onerror = (event) => {
+      console.error("IndexedDB error", event.target);
+    };
+    callback();
+  }
+}
+
 /**
  * This is the callback function used by the google maps code.
  * I.e. This function will get invoked after the google JS loads
  */
 function initMap() {
+  //set up the DB
+
   //create the map
   let map = new google.maps.Map(document.getElementById('map'),
       {
@@ -45,45 +79,85 @@ function initMap() {
     map: map,
   });
 
-  //load data from dynamo
-  //Add the buttons
-  scanForData(() => {
-    console.info("Generating heatmap buttons");
-    let buttonContainer = document.getElementById("heatmap-buttons");
-    let additionalButtonsContainer = document.getElementById("additional-heatmap-buttons");
-    let template = document.getElementById("T-heatmap-button");
-    allData.forEach(item => {
-      item.AssessmentRatio.S = `${parseFloat(item.AssessmentRatio.S) * 100}`;
-      Object.keys(item)
-      .filter(attribute => "parcelId" !== attribute && "lat" !== attribute && "lng" !== attribute)
-      .forEach(attribute => {
-        let currentMax = parseFloat(allAttributes[attribute]) || 0;
-        allAttributes[attribute] = Math.max(currentMax, parseFloat(item[attribute].S.replace(',', '')) || 0);
-      })
-    });
-    Object.keys(allAttributes).forEach(attribute => {
-      console.debug(`Adding ${attribute} button`);
-      let button = document.importNode(template.content, true).querySelector('button');
-      button.innerText = attribute;
-      button.onclick = () => setHeatmapData(attribute);
-      button.dataset['attribute'] = attribute;
-      if ('Appraisal' === attribute
-          || 'Assessment' === attribute
-          || 'AssessmentRatio' === attribute
-      ) {
-        if ('Appraisal' === attribute) {
-          button.classList.add('chosen');
-        }
-        buttonContainer.appendChild(button);
-      } else {
-        additionalButtonsContainer.appendChild(button);
+  openDB(() => {
+    //init the data
+    initData();
+  });
+}
+
+function reloadData() {
+  //load data from DB
+  if (db) {
+    scanForData(() => {
+      try {
+        //add to the DB
+        let objStore = db.transaction('all-data', "readwrite").objectStore('all-data');
+        allData.forEach((item) => {
+          objStore.put(item);
+        });
+      } catch (e) {
+        console.error("Index DB error", e);
       }
+
+      //set the heatmap data
+      setHeatmapData('Appraisal');
     });
+  }
+}
 
-    //set the heatmap data
-    setHeatmapData('Appraisal');
-  })
+function initData() {
+  //load from DB
+  if (db) {
 
+    console.debug("Getting data from DB");
+    let objStore = db.transaction('all-data').objectStore('all-data');
+    objStore.openCursor().onsuccess = (event) => {
+      let cursor = event.target.result;
+      if (cursor) {
+        allData.push(cursor.value);
+        cursor.continue();
+      } else {
+        console.log("got all stored data");
+
+        //generate the buttons
+        console.info("Generating heatmap buttons");
+        let buttonContainer = document.getElementById("heatmap-buttons");
+        let additionalButtonsContainer = document.getElementById("additional-heatmap-buttons");
+        let template = document.getElementById("T-heatmap-button");
+        allData.forEach(item => {
+          item.AssessmentRatio.S = `${parseFloat(item.AssessmentRatio.S) * 100}`;
+          Object.keys(item)
+          .filter(attribute => "parcelId" !== attribute && "lat" !== attribute && "lng" !== attribute)
+          .forEach(attribute => {
+            let currentMax = parseFloat(allAttributes[attribute]) || 0;
+            allAttributes[attribute] = Math.max(currentMax, parseFloat(item[attribute].S.replace(',', '')) || 0);
+          })
+        });
+        Object.keys(allAttributes).forEach(attribute => {
+          console.debug(`Adding ${attribute} button`);
+          let button = document.importNode(template.content, true).querySelector('button');
+          button.innerText = attribute;
+          button.onclick = () => setHeatmapData(attribute);
+          button.dataset['attribute'] = attribute;
+          if ('Appraisal' === attribute
+              || 'Assessment' === attribute
+              || 'AssessmentRatio' === attribute
+          ) {
+            if ('Appraisal' === attribute) {
+              button.classList.add('chosen');
+            }
+            buttonContainer.appendChild(button);
+          } else {
+            additionalButtonsContainer.appendChild(button);
+          }
+        });
+
+        //set the heatmap data
+        setHeatmapData('Appraisal');
+      }
+    };
+
+  }
 }
 
 function scanForData(callback) {
