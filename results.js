@@ -1,7 +1,7 @@
 //Some globals
 let heatmap, allData = [];
 let allAttributes = {};
-const MAX_VALUE = 300000;
+// const MAX_VALUE = 3000000;
 
 // Improve mobile map viewing
 if (navigator.userAgent.indexOf('iPhone') !== -1
@@ -218,6 +218,8 @@ function setHeatmapData(attributeName) {
   });
 
   let options = {
+    dissipating: false,
+    radius: 0.00028,
     data: heatMapData,
   };
   if (allAttributes.hasOwnProperty(attributeName)) {
