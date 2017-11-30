@@ -113,7 +113,9 @@
       <div id="additional-heatmap-buttons">
       </div>
 
-      <span style="position: absolute; bottom: 0; left: 0" onclick="reloadData()">🔄</span>
+      <span style="position: absolute; bottom: 0; left: 0; width: 20px;" onclick="reloadData()">🔄</span>
+      <span style="position: absolute; bottom: 0; left: 25px; width: 20px;" onclick="heatmap.setOptions({dissipating: true, radius: null})">⤨</span>
+      <span style="position: absolute; bottom: 0; left: 50px; width: 20px;" onclick="heatmap.setOptions({dissipating: false, radius: 0.00028})">-</span>
 
     </div>
 

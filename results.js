@@ -1,7 +1,8 @@
 //Some globals
 let heatmap, allData = [];
+let heatMapData = [];
 let allAttributes = {};
-// const MAX_VALUE = 3000000;
+const MAX_VALUE = 7000000;
 
 // Improve mobile map viewing
 if (navigator.userAgent.indexOf('iPhone') !== -1
@@ -63,7 +64,7 @@ function initMap() {
   let map = new google.maps.Map(document.getElementById('map'),
       {
         zoom: 14,
-        center: new google.maps.LatLng(36.099546, -83.930513),
+        center: new google.maps.LatLng(35.987773, -83.928522),
         mapTypeControlOptions: {
           mapTypeIds: ['roadmap', 'satellite', 'hybrid', 'terrain',
             'gray_map']
@@ -206,7 +207,7 @@ function scanForData(callback) {
 }
 
 function setHeatmapData(attributeName) {
-  let heatMapData = allData.filter(item => item.lat.S && item.lng.S)
+  heatMapData = allData.filter(item => item.lat.S && item.lng.S)
   .filter(item => item.hasOwnProperty(attributeName))
   .filter(item => !isNaN(parseFloat(item[attributeName].S)))
   //Add each address to the list of addresses, with a weight coming from the attributeName passed in
@@ -218,8 +219,8 @@ function setHeatmapData(attributeName) {
   });
 
   let options = {
-    dissipating: false,
-    radius: 0.00028,
+    // dissipating: false,
+    // radius: 0.00028,
     data: heatMapData,
   };
   if (allAttributes.hasOwnProperty(attributeName)) {
