@@ -265,7 +265,10 @@ function setHeatmapData(attributeName) {
   maxValueInput.value = currentMax || "";
 
   document.querySelectorAll('button.chosen').forEach(button => button.classList.remove('chosen'));
-  document.querySelector(`button[data-attribute=${currentAttribute}]`).classList.add('chosen');
+  let newB = document.querySelector(`button[data-attribute=${currentAttribute}]`);
+  if (newB) {
+    newB.classList.add('chosen');
+  }
 
 }
 
