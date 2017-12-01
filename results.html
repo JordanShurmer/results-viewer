@@ -53,6 +53,7 @@
     #left {
       height: 100%;
       width: 21%;
+      overflow-y: scroll;
       position: absolute;
       left: 1%;
     }
@@ -73,9 +74,9 @@
       border: 0;
       padding: .4em .8em;
       text-rendering: optimizeLegibility;
-      font-size: inherit;
+      font-size: 15px;
       font-weight: 300;
-      color: inherit
+      color: inherit;
     }
 
     .heatmap-button.chosen {
@@ -89,6 +90,7 @@
     .heatmap-button:active {
       background: #d6d6d6
     }
+
   </style>
 </head>
 <body>
@@ -107,15 +109,16 @@
       </template>
 
       <h2>Data</h2>
-      <div id="heatmap-buttons">
-      </div>
+      <div id="heatmap-buttons"></div>
       <h2>Additional Data</h2>
-      <div id="additional-heatmap-buttons">
-      </div>
+      <div id="additional-heatmap-buttons"></div>
 
-      <span style="position: absolute; bottom: 0; left: 0; width: 20px;" onclick="reloadData()">🔄</span>
-      <span style="position: absolute; bottom: 0; left: 25px; width: 20px;" onclick="heatmap.setOptions({dissipating: true, radius: null})">⤨</span>
-      <span style="position: absolute; bottom: 0; left: 50px; width: 20px;" onclick="heatmap.setOptions({dissipating: false, radius: 0.00028})">-</span>
+      <h2>Maximum Value</h2>
+      <input id="max-value" type="text">
+
+      <span style="cursor:pointer; position: absolute; bottom: 0; left: 0; width: 20px;" onclick="reloadData()">🔄</span>
+      <span style="cursor:pointer; position: absolute; bottom: 0; left: 25px; width: 20px;" onclick="heatmap.setOptions({dissipating: true, radius: null})">🏠</span>
+      <span style="cursor:pointer; position: absolute; bottom: 0; left: 50px; width: 20px;" onclick="heatmap.setOptions({dissipating: false, radius: 0.00028})">🗺</span>
 
     </div>
 

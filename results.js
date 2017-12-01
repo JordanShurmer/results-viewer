@@ -2,7 +2,37 @@
 let heatmap, allData = [];
 let heatMapData = [];
 let allAttributes = {};
-const MAX_VALUE = 7000000;
+let maxValueInput;
+let currentMax = Number.MAX_SAFE_INTEGER;
+let currentAttribute = "AssessmentRatio";
+
+let maxValues = {
+  AssessmentRatio: 100,
+  Assessment: 150000,
+  Appraisal: 400000,
+  YearBuilt: 2018,
+  YearAssessed: 2018,
+  Zestimate: 400000,
+  SqFtLot: 30000,
+  SqFtHome: 4800,
+  RoomCount: 12,
+  Bathrooms: 6
+};
+
+//set up the max-value input control
+maxValueInput = document.getElementById("max-value");
+maxValueInput.addEventListener("keydown", (event) => {
+  switch (event.key) {
+    case "Enter":
+      console.debug("Updating max value to", event.target.value);
+      currentMax = event.target.value;
+      event.preventDefault();
+      setHeatmapData();
+      break;
+    default:
+      return;
+  }
+}, true);
 
 // Improve mobile map viewing
 if (navigator.userAgent.indexOf('iPhone') !== -1
@@ -104,7 +134,8 @@ function reloadData() {
       }
 
       //set the heatmap data
-      setHeatmapData('Appraisal');
+      currentMax = maxValues[currentAttribute] || false;
+      setHeatmapData();
     });
   }
 }
@@ -131,7 +162,7 @@ function initData() {
         allData.forEach(item => {
           item.AssessmentRatio.S = `${parseFloat(item.AssessmentRatio.S) * 100}`;
           Object.keys(item)
-          .filter(attribute => "parcelId" !== attribute && "lat" !== attribute && "lng" !== attribute)
+          .filter(attribute => "parcelId" !== attribute && "lat" !== attribute && "lng" !== attribute && "30DayZestimateChange" !== attribute)
           .forEach(attribute => {
             let currentMax = parseFloat(allAttributes[attribute]) || 0;
             allAttributes[attribute] = Math.max(currentMax, parseFloat(item[attribute].S.replace(',', '')) || 0);
@@ -141,7 +172,10 @@ function initData() {
           console.debug(`Adding ${attribute} button`);
           let button = document.importNode(template.content, true).querySelector('button');
           button.innerText = attribute;
-          button.onclick = () => setHeatmapData(attribute);
+          button.onclick = () =>  {
+            currentMax = maxValues[attribute] || false;
+            setHeatmapData(attribute);
+          };
           button.dataset['attribute'] = attribute;
           if ('Appraisal' === attribute
               || 'Assessment' === attribute
@@ -157,7 +191,8 @@ function initData() {
         });
 
         //set the heatmap data
-        setHeatmapData('Appraisal');
+        currentMax = maxValues[currentAttribute] || false;
+        setHeatmapData();
       }
     };
 
@@ -166,73 +201,71 @@ function initData() {
 
 function scanForData(callback) {
   dynamodb.scan(params, (error, result) => {
+    try {
 
-    if (error !== null) {
-      //TODO: display this on page in a useful way somehow
-      console.error("DynamoDB Error", error);
-    } else {
-      console.info("Successful DynamoDB request");
-      console.debug(result);
-
-      //Cache the "valid" data
-      allData = allData.concat(
-          result.Items.filter(item => item.lat.S && item.lng.S && item.Appraisal && item.AssessmentRatio)
-          .filter(
-              item => !isNaN(parseFloat(item['Appraisal'].S.replace(',', '')))
-                  && parseFloat(item['Appraisal'].S.replace(',', '')) < MAX_VALUE
-          ).filter(
-              item => !isNaN(parseFloat(item['Assessment'].S.replace(',', '')))
-                  && parseFloat(item['Assessment'].S.replace(',', '')) < MAX_VALUE
-          ).filter(
-              item => !item.hasOwnProperty('Bathrooms')
-                  || !isNaN(parseFloat(item['Bathrooms'].S.replace(',', '')))
-                  && parseFloat(item['Bathrooms'].S.replace(',', '')) < 5
-          ).filter(
-              item => !item.hasOwnProperty('Zestimate')
-                  || !isNaN(parseFloat(item['Zestimate'].S.replace(',', '')))
-                  && parseFloat(item['Zestimate'].S.replace(',', '')) < MAX_VALUE
-          ).filter(
-              item => !isNaN(parseFloat(item['AssessmentRatio'].S))
-                  && parseFloat(item['AssessmentRatio'].S) < 1)
-      );
-
-      if (result.LastEvaluatedKey) {
-        params.ExclusiveStartKey = result.LastEvaluatedKey;
-        scanForData(callback);
+      if (error !== null) {
+        //TODO: display this on page in a useful way somehow
+        console.error("DynamoDB Error", error);
       } else {
-        callback();
+        console.info("Successful DynamoDB request");
+        console.debug(result);
+
+        //Cache the "valid" data
+        allData = allData.concat(
+            result.Items.filter(item => item.lat.S && item.lng.S && item.RoomCount && item.Appraisal && item.AssessmentRatio)
+            // .filter(
+            //     item => !isNaN(parseFloat(item['RoomCount'].S))
+            //         && parseFloat(item['RoomCount'].S) > 0
+            //         && parseFloat(item['RoomCount'].S) < 96
+            // )
+        );
+
+        if (result.LastEvaluatedKey) {
+          params.ExclusiveStartKey = result.LastEvaluatedKey;
+          scanForData(callback);
+        } else {
+          callback();
+        }
       }
+    } catch (e) {
+      console.error("DynamoDB pull error", e);
     }
   });
 }
 
 function setHeatmapData(attributeName) {
+  currentAttribute = attributeName || currentAttribute;
   heatMapData = allData.filter(item => item.lat.S && item.lng.S)
-  .filter(item => item.hasOwnProperty(attributeName))
-  .filter(item => !isNaN(parseFloat(item[attributeName].S)))
+  .filter(item => item.hasOwnProperty(currentAttribute))
+  .filter(item => !isNaN(parseFloat(item[currentAttribute].S)))
+  .filter(item => !currentMax || parseFloat(item[currentAttribute].S) < currentMax)
   //Add each address to the list of addresses, with a weight coming from the attributeName passed in
   .map(item => {
     return {
       location: new google.maps.LatLng(item.lat.S, item.lng.S),
-      weight: parseFloat(item[attributeName].S.replace(',', ''))
+      weight: parseFloat(item[currentAttribute].S.replace(',', ''))
     }
   });
 
   let options = {
-    // dissipating: false,
-    // radius: 0.00028,
+    dissipating: false,
+    radius: 0.00028,
     data: heatMapData,
   };
-  if (allAttributes.hasOwnProperty(attributeName)) {
-    console.debug(`max intensity = ${allAttributes[attributeName]}`);
-    options.maxIntensity = allAttributes[attributeName];
-  } else {
-    options.maxIntensity = 0;
-  }
+  options.maxIntensity = currentMax || 0;
+  console.debug(`max intensity = ${options.maxIntensity}`);
+  // if (allAttributes.hasOwnProperty(currentAttribute)) {
+  //   console.debug(`max intensity = ${allAttributes[currentAttribute]}`);
+  //   options.maxIntensity = allAttributes[currentAttribute];
+  // } else {
+  //   options.maxIntensity = 0;
+  // }
   heatmap.setOptions(options);
 
+  maxValueInput.value = currentMax || "";
+
   document.querySelectorAll('button.chosen').forEach(button => button.classList.remove('chosen'));
-  document.querySelector(`button[data-attribute=${attributeName}]`).classList.add('chosen');
+  document.querySelector(`button[data-attribute=${currentAttribute}]`).classList.add('chosen');
 
 }
 
