@@ -117,8 +117,8 @@
       <input id="max-value" type="text">
 
       <span style="cursor:pointer; position: absolute; bottom: 0; left: 0; width: 20px;" onclick="reloadData()">🔄</span>
-      <span style="cursor:pointer; position: absolute; bottom: 0; left: 25px; width: 20px;" onclick="heatmap.setOptions({dissipating: true, radius: null})">🏠</span>
-      <span style="cursor:pointer; position: absolute; bottom: 0; left: 50px; width: 20px;" onclick="heatmap.setOptions({dissipating: false, radius: 0.00028})">🗺</span>
+      <span style="cursor:pointer; position: absolute; bottom: 0; left: 25px; width: 20px;" onclick="(()=>{heatmap.setOptions({dissipating: true, radius: null}); dissipate=true; radius=null;})()">🏠</span>
+      <span style="cursor:pointer; position: absolute; bottom: 0; left: 50px; width: 20px;" onclick="(()=>{heatmap.setOptions({dissipating: false, radius: 0.00028}); dissipate=false; radius=0.00028;})()">🗺</span>
 
     </div>
 

@@ -1,10 +1,13 @@
 //Some globals
-let heatmap, allData = [];
+let heatmap;
+const allData = new Set();
 let heatMapData = [];
 let allAttributes = {};
 let maxValueInput;
 let currentMax = Number.MAX_SAFE_INTEGER;
 let currentAttribute = "AssessmentRatio";
+let dissipate = false;
+let radius = 0.00028;
 
 let maxValues = {
   AssessmentRatio: 100,
@@ -119,7 +122,7 @@ function initMap() {
 function reloadData() {
   //load data from DB
   if (db) {
-    allData = [];
+    allData.clear();
     scanForData(() => {
       try {
         //add to the DB
@@ -149,7 +152,7 @@ function initData() {
     objStore.openCursor().onsuccess = (event) => {
       let cursor = event.target.result;
       if (cursor) {
-        allData.push(cursor.value);
+        allData.add(cursor.value);
         cursor.continue();
       } else {
         console.log("got all stored data");
@@ -172,7 +175,7 @@ function initData() {
           console.debug(`Adding ${attribute} button`);
           let button = document.importNode(template.content, true).querySelector('button');
           button.innerText = attribute;
-          button.onclick = () =>  {
+          button.onclick = () => {
             currentMax = maxValues[attribute] || false;
             setHeatmapData(attribute);
           };
@@ -211,14 +214,15 @@ function scanForData(callback) {
         console.debug(result);
 
         //Cache the "valid" data
-        allData = allData.concat(
-            result.Items.filter(item => item.lat.S && item.lng.S && item.RoomCount && item.Appraisal && item.AssessmentRatio)
+        result.Items.filter(item => item.lat.S && item.lng.S && item.RoomCount && item.Appraisal && item.AssessmentRatio)
+        .forEach((result) => allData.add(result)
             // .filter(
             //     item => !isNaN(parseFloat(item['RoomCount'].S))
             //         && parseFloat(item['RoomCount'].S) > 0
             //         && parseFloat(item['RoomCount'].S) < 96
             // )
-        );
+        )
+        ;
 
         if (result.LastEvaluatedKey) {
           params.ExclusiveStartKey = result.LastEvaluatedKey;
@@ -235,7 +239,7 @@ function scanForData(callback) {
 
 function setHeatmapData(attributeName) {
   currentAttribute = attributeName || currentAttribute;
-  heatMapData = allData.filter(item => item.lat.S && item.lng.S)
+  heatMapData = [...allData].filter(item => item.lat.S && item.lng.S)
   .filter(item => item.hasOwnProperty(currentAttribute))
   .filter(item => !isNaN(parseFloat(item[currentAttribute].S)))
   .filter(item => !currentMax || parseFloat(item[currentAttribute].S) < currentMax)
@@ -248,8 +252,8 @@ function setHeatmapData(attributeName) {
   });
 
   let options = {
-    dissipating: false,
-    radius: 0.00028,
+    dissipating: dissipate,
+    radius: radius,
     data: heatMapData,
   };
   options.maxIntensity = currentMax || 0;
