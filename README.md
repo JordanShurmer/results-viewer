@@ -1,29 +1,27 @@
-# Results Viewer 👓
+# Spatial Data Anaylses - Web App
 
-This repo contains the code for the results-viewing portion of our Senior Design project.
+> A web app for the Spatial Data Analysis course for Spring 2018 at UTK.
 
-## Goals
+Displays Knox County property tax and related info in a meaningful way.
 
-The goal is to present the data in a creative and meaningful way. 
+## Resources
 
-* A map with the info overlayed
-  * Heatmap of trends that we discover
-  
-  
-## Viewing the results
+* [AWS SDK Documentation](https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/Request.html#eachPage-property)
+* [Google Maps Documentation](https://developers.google.com/maps/documentation/javascript/reference#HeatmapLayerOptions)
+* [Pretty Checkboxes](https://lokesh-coder.github.io/pretty-checkbox/#more)
 
-Currently it is all contained in the one file [results.html](/results.html).
+## Build Setup
 
-Simple open that file in any modern browser.
-  
-## Implementation Details
+``` bash
+# install dependencies
+npm install
 
-This is set up to use the [Google Maps API](https://developers.google.com/maps/documentation/javascript/?authuser=1). The API key came from Jordan Shurmer's `vols.utk.edu` account.
+# serve with hot reload at localhost:8080
+npm run dev
 
-# Project Description
+# build for production with minification
+npm run build
+```
 
-Counties levy a tax on a home to pay for schools, libraries, roads, and many other things the community needs. The question is, does everyone pay their fair share?
+For detailed explanation on how things work, consult the [docs for vue-loader](http://vuejs.github.io/vue-loader).
 
-Suppose the tax is based on the sale price of the home. Then somebody living in a house for many years pays too little, as their home value goes up from what they paid. How do we do know if that’s the case or what the economic impact is? Well, property taxes are publicly available and a number of web sites list what they call fair market values of homes; it would be interesting to correlate the two. Public websites also list sales prices of homes; it would also be interesting to use current neighborhood sales prices to determine fair market values of homes (do houses of the same size, age and location pay the same taxes etc?).
-
-The task is to develop a software tool that gathers relevant numbers, performs analysis, and presents scenarios to the county government for what-if scenarios. One such would be to determine a histogram of fair share property tax payments and compare them against the current taxes. Another would be to analyze the data for neighborhood trends. Maybe some neighborhoods need a break while others don’t? This is where you use your imagination and good citizen skills. Visualizing the results on a map would be very helpful. The suggestion is to start with Knox County and expand to the US at large. We may form a non-profit corporation if the bucket holds water.
