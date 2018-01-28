@@ -39,7 +39,7 @@
     },
     async created() {
       await this.$store.dispatch('init');
-      setTimeout(() => this.loading = false, 100);
+      this.$nextTick(() => this.loading = false);
     }
   }
 </script>

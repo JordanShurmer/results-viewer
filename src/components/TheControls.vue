@@ -25,15 +25,15 @@
 
   const allAttributes = [
     {
-      value: 'AssessmentRatio',
+      value: 'assessmentRatio',
       label: 'Assessment Ratio',
     },
     {
-      value: 'Assessment',
+      value: 'assessment',
       label: 'Assessment',
     },
     {
-      value: 'Appraisal',
+      value: 'appraisal',
       label: 'Appraisal',
     }
   ];

@@ -10,7 +10,7 @@
     "build": "cross-env NODE_ENV=production webpack --progress --hide-modules"
   },
   "dependencies": {
-    "aws-sdk": "^2.184.0",
+    "axios": "^0.17.1",
     "epic-spinners": "^1.0.1",
     "localforage": "^1.5.5",
     "mdi-vue": "^0.2.11",
