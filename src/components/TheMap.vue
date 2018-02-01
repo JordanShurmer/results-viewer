@@ -15,19 +15,24 @@
         map: {},
         heatmap: new google.maps.visualization.HeatmapLayer({
           dissipating: false,
-          radius: 0.0003,
+          radius: 0.00028,
+          maxIntensity: 100
         })
       }
     },
     computed: {
       viewerData() {
         return this.$store.getters.viewerData;
+      },
+      max() {
+        return this.$store.getters.currentMax;
       }
     },
     watch: {
       viewerData() {
         console.debug("Setting heatmap data");
         this.heatmap.setData(this.viewerData);
+        if (this.max) this.heatmap.setOptions({maxIntensity: this.max});
         console.debug("Done setting heatmap data");
       }
     },

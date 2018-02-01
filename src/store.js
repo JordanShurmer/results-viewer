@@ -8,24 +8,39 @@ Vue.use(Vuex);
 
 async function populateAndCacheData() {
   const response = await axios.get('https://s3.amazonaws.com/spatial-data-web-support/viewer-data.json');
-  console.debug("Response:", response);
 
   //save the item (don't await so that we can move on while it's being saved)
   localforage.setItem('viewerdata-all', response.data);
 
-  return response.data;
+  return response.data.map((item) => {
+    item.assessmentRatio = item.assessmentRatio*100;
+    return item;
+  });
 }
 
 export default new Vuex.Store({
   state: {
     selectedAttribute: {value: 'assessmentRatio'},
     allData: [],
+    maxValues: {
+      assessmentRatio: 99,
+      assessment: 150000,
+      appraisal: 400000,
+      yearBuilt: 2018,
+      yearAssessed: 2018,
+      zestimate: 400000,
+    },
+    range: [0, 26]
   },
   getters: {
+    currentMax(state) {
+      return state.maxValues[state.selectedAttribute.value];
+    },
     viewerData(state) {
       const selection = state.selectedAttribute.value;
       return state.allData
         .filter(item => item.hasOwnProperty(selection))
+        .filter(item => item[selection] > state.range[0] && item[selection] < state.range[1])
         //return a list of {location, weight} items to be used in the heatmap
         .map(item => {
           return {
@@ -41,6 +56,9 @@ export default new Vuex.Store({
     },
     setData(state, allData) {
       state.allData = allData;
+    },
+    range(state, range) {
+      state.range = range;
     }
   },
   actions: {
