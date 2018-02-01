@@ -44,7 +44,7 @@ export default new Vuex.Store({
         //return a list of {location, weight} items to be used in the heatmap
         .map(item => {
           return {
-            location: new google.maps.LatLng(item.lat, item.lng),
+            location: [item.lat, item.lng],
             weight: item[selection],
           }
         })

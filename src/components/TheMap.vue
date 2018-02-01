@@ -5,7 +5,9 @@
 </template>
 
 <script>
-  import GrayMap from '../map-styles/gray_map';
+  import mapboxgl from 'mapbox-gl';
+
+  mapboxgl.accessToken = 'pk.eyJ1IjoianNodXJtZXIiLCJhIjoiY2pkM3dpZ3RwMHA4bTJxcWZnOXd4ZDdzMCJ9.ntCJOHn6dfVJjRhvfEuWpw';
 
   export default {
     name: "the-map",
@@ -13,50 +15,39 @@
     data() {
       return {
         map: {},
-        heatmap: new google.maps.visualization.HeatmapLayer({
-          dissipating: false,
-          radius: 0.00028,
-          maxIntensity: 100
-        })
       }
     },
     computed: {
-      viewerData() {
-        return this.$store.getters.viewerData;
-      },
-      max() {
-        return this.$store.getters.currentMax;
-      }
+      // viewerData() {
+      //   return this.$store.getters.viewerData;
+      // },
+      // max() {
+      //   return this.$store.getters.currentMax;
+      // }
     },
     watch: {
-      viewerData() {
-        console.debug("Setting heatmap data");
-        this.heatmap.setData(this.viewerData);
-        if (this.max) this.heatmap.setOptions({maxIntensity: this.max});
-        console.debug("Done setting heatmap data");
-      }
+      // viewerData() {
+      //   console.debug("Setting heatmap data");
+      //   console.debug("Done setting heatmap data");
+      // }
     },
     mounted() {
       //create the map
-      let mapdiv = document.getElementById("map");
-      const options = {
-        zoom: 14,
-        center: new google.maps.LatLng(35.987773, -83.928522),
-        mapTypeControlOptions: {
-          mapTypeIds: ['roadmap', 'satellite', 'hybrid', 'terrain', 'gray_map']
-        }
-      };
-      this.map = new google.maps.Map(mapdiv, options);
-      this.map.mapTypes.set('gray_map', new google.maps.StyledMapType(GrayMap, {name: 'Gray Map'}));
-      this.map.setMapTypeId('gray_map');
-
-      this.heatmap.setMap(this.map);
-      this.heatmap.setData(this.viewerData);
+      this.map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/streets-v10',
+        center: [-83.928522, 35.987773],
+        zoom: 10,
+      });
     }
   }
 </script>
 
 <style scoped lang="scss">
+
+  .the-map {
+    height: 100%;
+  }
 
   #map {
     width: 100%;

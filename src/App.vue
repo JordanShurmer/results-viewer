@@ -1,20 +1,24 @@
 <template>
   <div id="app">
-    <h1>The Data</h1>
 
-    <nav class="the-controls">
-      <the-controls/>
-    </nav>
+    <aside>
+      <h1>The Data</h1>
 
-    <main class="the-map">
+      <nav class="the-controls">
+        <the-controls/>
+      </nav>
+    </aside>
+
+    <main>
       <breeding-rhombus-spinner
         v-if="loading"
         :animation-duration="2000"
         :size="65"
         :color="'#ff1d5e'"
       />
-      <the-map v-else />
+      <the-map v-else/>
     </main>
+
   </div>
 </template>
 
@@ -34,11 +38,11 @@
     name: 'app',
     data() {
       return {
-        loading: true,
+        loading: false,
       }
     },
     async created() {
-      await this.$store.dispatch('init');
+      // await this.$store.dispatch('init');
       this.$nextTick(() => this.loading = false);
     }
   }
@@ -54,15 +58,16 @@
     height: 100vh;
     width: 100%;
     display: flex;
-    flex-flow: column nowrap;
+    flex-flow: row nowrap;
 
-    .header {
-      height: 7vh;
+    aside {
+      width: 33%;
+      height: 100%;
     }
 
-    .the-map {
-      height: 93vh;
-      width: 100%;
+    main {
+      flex: 1 1 100%;
+      height: 100%;
     }
   }
 
@@ -89,4 +94,5 @@
   a {
     color: #42b983;
   }
+
 </style>
