@@ -1,21 +1,11 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
-import localforage from 'localforage'
 import axios from 'axios'
 
 Vue.use(Vuex);
 
 
 async function populateAndCacheData() {
-  const response = await axios.get('https://s3.amazonaws.com/spatial-data-web-support/viewer-data.json');
-
-  //save the item (don't await so that we can move on while it's being saved)
-  localforage.setItem('viewerdata-all', response.data);
-
-  return response.data.map((item) => {
-    item.assessmentRatio = item.assessmentRatio*100;
-    return item;
-  });
 }
 
 export default new Vuex.Store({
@@ -30,9 +20,11 @@ export default new Vuex.Store({
       yearAssessed: 2018,
       zestimate: 400000,
     },
-    range: [0, 26]
+    range: [0, 26],
   },
   getters: {
+    geoJson(state) {
+    },
     currentMax(state) {
       return state.maxValues[state.selectedAttribute.value];
     },
@@ -86,9 +78,15 @@ export default new Vuex.Store({
      * Load the data stored in Local Forage
      * @returns {Promise<void>} which resolved when all the data has been initialized and committed to the store
      */
-    async init(context) {
-      const localAllData = await localforage.getItem('viewerdata-all');
-      context.commit('setData', localAllData);
+    async init({commit, state}) {
+      try {
+
+        commit('setGeoJson', response.data);
+
+      } catch (e) {
+        console.error(`Could not get ${state.selectedAttribute.value} geojson`);
+        console.error(e);
+      }
 
     }
   },

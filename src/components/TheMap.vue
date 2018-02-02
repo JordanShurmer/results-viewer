@@ -11,13 +11,19 @@
 
   export default {
     name: "the-map",
-    props: ['heatmapData'],
     data() {
       return {
         map: {},
+        heatmapLayer: {},
+        circlesLayer: {},
+
+        sources: {assessmentRatio: true}
       }
     },
     computed: {
+      selectedAttribute() {
+        return this.$store.state.selectedAttribute.value;
+      }
       // viewerData() {
       //   return this.$store.getters.viewerData;
       // },
@@ -26,18 +32,156 @@
       // }
     },
     watch: {
-      // viewerData() {
-      //   console.debug("Setting heatmap data");
-      //   console.debug("Done setting heatmap data");
-      // }
+      selectedAttribute() {
+        if (!this.sources[this.selectedAttribute]) {
+          this.sources[this.selectedAttribute] = true;
+          this.map.addSource(this.selectedAttribute, {
+            "type": "geojson",
+            "data": `https://s3.amazonaws.com/spatial-data-web-support/${this.selectedAttribute}.json.gz`
+          })
+        }
+
+        this.heatmapLayer.source = this.selectedAttribute;
+        this.circlesLayer.source = this.selectedAttribute;
+      }
     },
     mounted() {
       //create the map
       this.map = new mapboxgl.Map({
         container: 'map',
-        style: 'mapbox://styles/mapbox/streets-v10',
-        center: [-83.928522, 35.987773],
-        zoom: 10,
+        style: 'mapbox://styles/mapbox/light-v9',
+        center: [-83.998522, 35.960773],
+        zoom: 9,
+      });
+
+
+      this.heatmapLayer = {
+        id: "heatmap-layer",
+        type: "heatmap",
+        source: "assessmentRatio",
+        maxzoom: 16,
+        paint: {
+          // Increase the heatmap weight based on frequency and property magnitude
+          "heatmap-weight": [
+            "interpolate",
+            ["linear"],
+            ["get", "weight"],
+            0, 0,
+            10, 1,
+            20, 2,
+            24, 3,
+            25, 4,
+            26, 5,
+            99, 8
+          ],
+          // Increase the heatmap color weight weight by zoom level
+          // heatmap-intensity is a multiplier on top of heatmap-weight
+          "heatmap-intensity": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            0, 1,
+            9, 3,
+            15, 5
+          ],
+          // Color ramp for heatmap.  Domain is 0 (low) to 1 (high).
+          // Begin color ramp at 0-stop with a 0-transparancy color
+          // to create a blur-like effect.
+          // "heatmap-color": [
+          //   "interpolate",
+          //   ["linear"],
+          //   ["heatmap-density"],
+          //   0, "rgba(33,102,172,0)",
+          //   0.2, "rgb(103,169,207)",
+          //   0.4, "rgb(209,229,240)",
+          //   0.6, "rgb(253,219,199)",
+          //   0.8, "rgb(239,138,98)",
+          //   1, "rgb(178,24,43)"
+          // ],
+          // "heatmap-radius": 4,
+          // Adjust the heatmap radius by zoom level
+          "heatmap-radius": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            0, 1,
+            10, 12,
+            15, 20
+          ],
+          // Transition from heatmap to circle layer by zoom level
+          // "heatmap-opacity": [
+          //   "interpolate",
+          //   ["linear"],
+          //   ["zoom"],
+          //   3, 1,
+          //   15, 0
+          // ],
+        }
+      };
+
+      this.circlesLayer = {
+        "id": "circles-layer",
+        "type": "circle",
+        "source": "assessmentRatio",
+        "minzoom": 15,
+        "paint": {
+          // Size circle radius by earthquake magnitude and zoom level
+          "circle-radius": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            7, [
+              "interpolate",
+              ["linear"],
+              ["get", "weight"],
+              1, 1,
+              6, 4
+            ],
+            16, [
+              "interpolate",
+              ["linear"],
+              ["get", "weight"],
+              1, 5,
+              6, 50
+            ]
+          ],
+          // Color circle by earthquake magnitude
+          "circle-color": [
+            "interpolate",
+            ["linear"],
+            ["get", "weight"],
+            1, "rgba(33,102,172,0)",
+            2, "rgb(103,169,207)",
+            3, "rgb(209,229,240)",
+            4, "rgb(253,219,199)",
+            5, "rgb(239,138,98)",
+            6, "rgb(178,24,43)"
+          ],
+          "circle-stroke-color": "white",
+          "circle-stroke-width": 1,
+          // Transition from heatmap to circle layer by zoom level
+          "circle-opacity": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            7, 0,
+            8, 1
+          ]
+        }
+      };
+
+      this.map.on('load', async () => {
+        try {
+          this.map.addSource('assessmentRatio', {
+            "type": "geojson",
+            "data": 'https://s3.amazonaws.com/spatial-data-web-support/assessmentRatio.json.gz'
+          });
+          this.map.addLayer(this.heatmapLayer);
+          this.map.addLayer(this.circlesLayer);
+        } catch (e) {
+          console.error("error in map load callback");
+          console.error(e);
+        }
       });
     }
   }

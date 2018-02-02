@@ -9,6 +9,7 @@ module.exports = {
     filename: 'build.js'
   },
   module: {
+    noParse: /(mapbox-gl)\.js$/,
     rules: [
       {
         test: /\.css$/,
@@ -99,12 +100,13 @@ if (process.env.NODE_ENV === 'production') {
         NODE_ENV: '"production"'
       }
     }),
-    // new webpack.optimize.UglifyJsPlugin({
-    //   sourceMap: true,
-    //   compress: {
-    //     warnings: false
-    //   }
-    // }),
+    new webpack.optimize.UglifyJsPlugin({
+      sourceMap: true,
+      compress: {
+        warnings: false,
+        // comparisons: false,  // don't optimize comparisons
+      }
+    }),
     new webpack.LoaderOptionsPlugin({
       minimize: true
     })

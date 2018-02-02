@@ -17,6 +17,7 @@
         :interval="ranges[selectedAttribute.value].interval"
         @drag-end="setRange"
         v-model="selectedRange"
+        class="range-slider"
       />
     </div>
 
@@ -108,5 +109,9 @@
 </script>
 
 <style scoped>
+
+  .range-slider {
+    margin-top: 30px;
+  }
 
 </style>
