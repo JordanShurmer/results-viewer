@@ -51,7 +51,7 @@
         container: 'map',
         style: 'mapbox://styles/mapbox/light-v9',
         center: [-83.998522, 35.960773],
-        zoom: 9,
+        zoom: 11,
       });
 
 
@@ -61,52 +61,44 @@
         source: "assessmentRatio",
         maxzoom: 16,
         paint: {
-          // Increase the heatmap weight based on frequency and property magnitude
-          "heatmap-weight": [
-            "interpolate",
-            ["linear"],
-            ["get", "weight"],
-            0, 0,
-            10, 1,
-            20, 2,
-            24, 3,
-            25, 4,
-            26, 5,
-            99, 8
-          ],
+          // Heatmap weight is based on the assessment weight
+          "heatmap-weight": ["/", ["get", "weight"], 10],
+
           // Increase the heatmap color weight weight by zoom level
           // heatmap-intensity is a multiplier on top of heatmap-weight
           "heatmap-intensity": [
             "interpolate",
             ["linear"],
             ["zoom"],
-            0, 1,
-            9, 3,
-            15, 5
+            0, .2,
+            6, .6,
+            9, .8,
+            10, 1,
+            11, 4,
+            13, 12,
+            15, 29
           ],
           // Color ramp for heatmap.  Domain is 0 (low) to 1 (high).
           // Begin color ramp at 0-stop with a 0-transparancy color
           // to create a blur-like effect.
-          // "heatmap-color": [
-          //   "interpolate",
-          //   ["linear"],
-          //   ["heatmap-density"],
-          //   0, "rgba(33,102,172,0)",
-          //   0.2, "rgb(103,169,207)",
-          //   0.4, "rgb(209,229,240)",
-          //   0.6, "rgb(253,219,199)",
-          //   0.8, "rgb(239,138,98)",
-          //   1, "rgb(178,24,43)"
-          // ],
-          // "heatmap-radius": 4,
+          "heatmap-color": [
+            "step",
+            ["heatmap-density"],
+            "rgb(169 ,223 ,191)",
+            0.2, "rgb(130 ,224 ,170)",
+            0.4, "rgb(82 ,190 ,128)",
+            0.6, "rgb(241 ,196 ,15 )",
+            0.8, "rgb(230, 126, 34)",
+            1, "rgb(192, 57, 43)"
+          ],
           // Adjust the heatmap radius by zoom level
           "heatmap-radius": [
             "interpolate",
             ["linear"],
             ["zoom"],
-            0, 1,
-            10, 12,
-            15, 20
+            0, 2,
+            9, 4,
+            15, 3
           ],
           // Transition from heatmap to circle layer by zoom level
           // "heatmap-opacity": [
@@ -176,8 +168,8 @@
             "type": "geojson",
             "data": 'https://s3.amazonaws.com/spatial-data-web-support/assessmentRatio.json.gz'
           });
-          this.map.addLayer(this.heatmapLayer);
-          this.map.addLayer(this.circlesLayer);
+          this.map.addLayer(this.heatmapLayer, 'waterway-label');
+          this.map.addLayer(this.circlesLayer, 'waterway-label');
         } catch (e) {
           console.error("error in map load callback");
           console.error(e);
