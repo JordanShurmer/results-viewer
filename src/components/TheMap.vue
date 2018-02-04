@@ -33,16 +33,16 @@
     },
     watch: {
       selectedAttribute() {
-        if (!this.sources[this.selectedAttribute]) {
-          this.sources[this.selectedAttribute] = true;
-          this.map.addSource(this.selectedAttribute, {
-            "type": "geojson",
-            "data": `https://s3.amazonaws.com/spatial-data-web-support/${this.selectedAttribute}.json.gz`
-          })
-        }
+        //if (!this.sources[this.selectedAttribute]) {
+          //this.sources[this.selectedAttribute] = true;
+          //this.map.addSource(this.selectedAttribute, {
+            //"type": "geojson",
+            //"data": `https://s3.amazonaws.com/spatial-data-web-support/${this.selectedAttribute}.json.gz`
+          //})
+        //}
 
-        this.heatmapLayer.source = this.selectedAttribute;
-        this.circlesLayer.source = this.selectedAttribute;
+        //this.heatmapLayer.source = this.selectedAttribute;
+        //this.circlesLayer.source = this.selectedAttribute;
       }
     },
     mounted() {
@@ -122,49 +122,24 @@
           "circle-radius": [
             "interpolate",
             ["linear"],
-            ["zoom"],
-            2, [
-              "step",
-              ["get", "assessmentRatio"],
-              1,
-              25, 1,
-              26, 12,
-              29, 16,
-              35, 20,
-              45, 30
-            ],
-            13, [
-              "step",
-              ["get", "assessmentRatio"],
-              3,
-              25, 10,
-              26, 18,
-              29, 19,
-              35, 25,
-              45, 50
-            ],
-            20, [
-              "step",
-              ["get", "assessmentRatio"],
-              10,
-              25, 40,
-              26, 60,
-              29, 80,
-              35, 120,
-              45, 200
-            ]
+            ["get", "assessmentRatio"],
+            .1, 1,
+            .24, 3,
+            .35, 7,
+            .9, 20,
+            100, 50
           ],
           // Color circle by earthquake magnitude
           "circle-color": [
             "step",
             ["get", "assessmentRatio"],
             "rgb(169 ,223 ,191)",
-            10, "rgb(130 ,224 ,170)",
-            25, "rgb(82 ,190 ,128)",
-            26, "rgb(241 ,196 ,15 )",
-            29, "rgb(230, 126, 34)",
-            33, "rgb(192, 57, 43)",
-            45, "rgb(104, 18, 5)"
+            .10, "rgb(130 ,224 ,170)",
+            .25, "rgb(82 ,190 ,128)",
+            .26, "rgb(241 ,196 ,15 )",
+            .29, "rgb(230, 126, 34)",
+            .33, "rgb(192, 57, 43)",
+            .45, "rgb(104, 18, 5)"
           ],
 
           "circle-stroke-color": "white",
@@ -184,7 +159,7 @@
         try {
           this.map.addSource('alldata', {
             "type": "geojson",
-            "data": 'https://s3.amazonaws.com/spatial-data-web-support/alldata.json.gz'
+            "data": 'https://s3.amazonaws.com/spatial-data-web-support/alldata-small.json.gz'
           });
           this.map.addLayer(this.heatmapLayer, 'waterway-label');
           this.map.addLayer(this.circlesLayer, 'waterway-label');
