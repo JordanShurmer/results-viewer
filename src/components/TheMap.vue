@@ -17,7 +17,7 @@
         heatmapLayer: {},
         circlesLayer: {},
 
-        sources: {assessmentRatio: true}
+        sources: {alldata: true}
       }
     },
     computed: {
@@ -58,11 +58,11 @@
       this.heatmapLayer = {
         id: "heatmap-layer",
         type: "heatmap",
-        source: "assessmentRatio",
-        maxzoom: 16,
+        source: "alldata",
+        maxzoom: 1,
         paint: {
-          // Heatmap weight is based on the assessment weight
-          "heatmap-weight": ["/", ["get", "weight"], 10],
+          // Heatmap assessmentRatio is based on the assessment assessmentRatio
+          "heatmap-weight": ["/", ["get", "assessmentRatio"], 10],
 
           // Increase the heatmap color weight weight by zoom level
           // heatmap-intensity is a multiplier on top of heatmap-weight
@@ -101,72 +101,90 @@
             15, 3
           ],
           // Transition from heatmap to circle layer by zoom level
-          // "heatmap-opacity": [
-          //   "interpolate",
-          //   ["linear"],
-          //   ["zoom"],
-          //   3, 1,
-          //   15, 0
-          // ],
+          "heatmap-opacity": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            3, 1,
+            14, 1,
+            15, 0
+          ],
         }
       };
 
       this.circlesLayer = {
         "id": "circles-layer",
         "type": "circle",
-        "source": "assessmentRatio",
-        "minzoom": 15,
+        "source": "alldata",
+        "minzoom": 5,
         "paint": {
           // Size circle radius by earthquake magnitude and zoom level
           "circle-radius": [
             "interpolate",
             ["linear"],
             ["zoom"],
-            7, [
-              "interpolate",
-              ["linear"],
-              ["get", "weight"],
-              1, 1,
-              6, 4
+            2, [
+              "step",
+              ["get", "assessmentRatio"],
+              1,
+              25, 1,
+              26, 12,
+              29, 16,
+              35, 20,
+              45, 30
             ],
-            16, [
-              "interpolate",
-              ["linear"],
-              ["get", "weight"],
-              1, 5,
-              6, 50
+            13, [
+              "step",
+              ["get", "assessmentRatio"],
+              3,
+              25, 10,
+              26, 18,
+              29, 19,
+              35, 25,
+              45, 50
+            ],
+            20, [
+              "step",
+              ["get", "assessmentRatio"],
+              10,
+              25, 40,
+              26, 60,
+              29, 80,
+              35, 120,
+              45, 200
             ]
           ],
           // Color circle by earthquake magnitude
           "circle-color": [
-            "interpolate",
-            ["linear"],
-            ["get", "weight"],
-            1, "rgba(33,102,172,0)",
-            2, "rgb(103,169,207)",
-            3, "rgb(209,229,240)",
-            4, "rgb(253,219,199)",
-            5, "rgb(239,138,98)",
-            6, "rgb(178,24,43)"
+            "step",
+            ["get", "assessmentRatio"],
+            "rgb(169 ,223 ,191)",
+            10, "rgb(130 ,224 ,170)",
+            25, "rgb(82 ,190 ,128)",
+            26, "rgb(241 ,196 ,15 )",
+            29, "rgb(230, 126, 34)",
+            33, "rgb(192, 57, 43)",
+            45, "rgb(104, 18, 5)"
           ],
+
           "circle-stroke-color": "white",
           "circle-stroke-width": 1,
           // Transition from heatmap to circle layer by zoom level
-          "circle-opacity": [
-            "interpolate",
-            ["linear"],
-            ["zoom"],
-            7, 0,
-            8, 1
-          ]
+          // "circle-opacity": [
+          //   "interpolate",
+          //   ["linear"],
+          //   ["zoom"],
+          //   15, 0,
+          //   16, 1
+          // ]
         }
       };
 
       this.map.on('load', async () => {
         try {
-          this.map.addSource('assessmentRatio', {
+          this.map.addSource('alldata', {
             "type": "geojson",
-            "data": 'https://s3.amazonaws.com/spatial-data-web-support/assessmentRatio.json.gz'
+            "data": 'https://s3.amazonaws.com/spatial-data-web-support/alldata.json.gz'
           });
           this.map.addLayer(this.heatmapLayer, 'waterway-label');
           this.map.addLayer(this.circlesLayer, 'waterway-label');
@@ -175,6 +193,19 @@
           console.error(e);
         }
       });
+
+      this.map.on('click', 'circles-layer', (e) => {
+        new mapboxgl.Popup()
+          .setLngLat(e.features[0].geometry.coordinates)
+          .setHTML(`
+<b>Assessment</b>  ${e.features[0].properties.assessment}<br>
+<b>Appraisal</b>  ${e.features[0].properties.appraisal}<br>
+<b>Assessment Ratio:</b>  ${e.features[0].properties.assessmentRatio}<br>
+<b>Parcel ID:</b> ${e.features[0].properties.id} (${e.features[0].properties.lng}, ${e.features[0].properties.lat})`)
+          .addTo(this.map);
+      });
+
+
     }
   }
 </script>

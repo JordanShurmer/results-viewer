@@ -7,8 +7,8 @@ Displays Knox County property tax and related info in a meaningful way.
 ## Resources
 
 * [AWS SDK Documentation](https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/Request.html#eachPage-property)
-* [Google Maps Documentation](https://developers.google.com/maps/documentation/javascript/reference#HeatmapLayerOptions)
 * [Pretty Checkboxes](https://lokesh-coder.github.io/pretty-checkbox/#more)
+* [Mapbox Tutorial](https://www.mapbox.com/help/make-a-heatmap-with-mapbox-gl-js/)
 
 ## Build Setup
 
