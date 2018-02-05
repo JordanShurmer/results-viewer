@@ -1,11 +1,11 @@
 var path = require('path')
+var HtmlWebpackPlugin = require('html-webpack-plugin')
 var webpack = require('webpack')
 
 module.exports = {
   entry: './src/main.js',
   output: {
-    path: path.resolve(__dirname, './dist'),
-    publicPath: '/dist/',
+    path: path.resolve(__dirname, './public'),
     filename: 'build.js'
   },
   module: {
@@ -71,6 +71,7 @@ module.exports = {
     ]
   },
   plugins: [
+    new HtmlWebpackPlugin({template: 'index.html'}),
     new webpack.NamedModulesPlugin()
   ],
   resolve: {
