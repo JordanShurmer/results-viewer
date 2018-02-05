@@ -159,7 +159,7 @@
         try {
           this.map.addSource('alldata', {
             "type": "geojson",
-            "data": 'https://s3.amazonaws.com/spatial-data-web-support/alldata-small.json.gz'
+            "data": 'https://s3.amazonaws.com/spatial-data-web-support/alldata.json.gz'
           });
           this.map.addLayer(this.heatmapLayer, 'waterway-label');
           this.map.addLayer(this.circlesLayer, 'waterway-label');
