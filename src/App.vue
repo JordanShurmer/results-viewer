@@ -1,13 +1,13 @@
 <template>
   <div id="app">
 
-    <aside>
-      <h1>The Data</h1>
-
-      <nav class="the-controls">
-        <the-controls/>
-      </nav>
-    </aside>
+    <!--<aside>-->
+      <!--<h1>The Data</h1>-->
+<!---->
+      <!--<nav class="the-controls">-->
+        <!--<the-controls/>-->
+      <!--</nav>-->
+    <!--</aside>-->
 
     <main>
       <breeding-rhombus-spinner
