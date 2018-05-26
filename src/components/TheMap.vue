@@ -39,14 +39,14 @@
       </label>
     </div>
 
-    <div id="map"></div>
-    <template id="map-ctrls">
 
-    </template>
+    <div id="map"></div>
+
   </div>
 </template>
 
 <script>
+  import axios from 'axios';
   import mapboxgl from 'mapbox-gl';
 
   mapboxgl.accessToken = 'pk.eyJ1IjoianNodXJtZXIiLCJhIjoiY2pkM3dpZ3RwMHA4bTJxcWZnOXd4ZDdzMCJ9.ntCJOHn6dfVJjRhvfEuWpw';
@@ -58,6 +58,7 @@
         map: {},
         heatmapLayer: {},
         circlesLayer: {},
+        neighborData: {},
         styleChoice: 'basic',
 
         sources: {alldata: true}
@@ -81,7 +82,7 @@
         this.map.setStyle(`mapbox://styles/mapbox/${this.styleChoice}-v9`);
       },
     },
-    mounted() {
+    async mounted() {
       //create the map
       this.map = new mapboxgl.Map({
         container: 'map',
@@ -161,45 +162,32 @@
             "interpolate",
             ["linear"],
             ["zoom"],
-            6, ["interpolate", ["linear"],
-              ["get", "assessmentRatio"],
-              .1, 5,
-              .19, 2,
-              .24, .2,
-              .35, 2,
-              .9, 5,
-              100, 7
+            8, 0,
+            9, ["interpolate", ["linear"],
+              ["get", "relativeAppraisal"],
+              .5, 4,
+              1, .5,
+              2, 4,
             ],
             11, ["interpolate", ["linear"],
-              ["get", "assessmentRatio"],
-              .1, 7,
-              .19, 3,
-              .24, 1,
-              .35, 3,
-              .9, 7,
-              100, 12
+              ["get", "relativeAppraisal"],
+              .5, 5,
+              1, .8,
+              2, 5,
             ],
-            13, ["interpolate", ["linear"],
-              ["get", "assessmentRatio"],
-              .1, 20,
-              .19, 7,
-              .24, 3,
-              .35, 7,
-              .9, 20,
-              100, 50
+            16, ["interpolate", ["linear"],
+              ["get", "relativeAppraisal"],
+              .5, 20,
+              1, 2,
+              2, 20,
             ]
           ],
-          // Color circle by earthquake magnitude
+          // Color circle by positive or negative
           "circle-color": [
             "step",
-            ["get", "assessmentRatio"],
-            "#525ebe",
-            .19, "#52beb8",
-            .25, "#52be80",
-            .26, "#f1c40f",
-            .29, "#E67E22",
-            .33, "#C0392B",
-            .45, "#681205"
+            ["get", "relativeAppraisal"],
+            "#f44336",
+            1, "#009688",
           ],
 
           "circle-stroke-color": "rgba(255, 255, 255, .2)",
@@ -227,14 +215,20 @@
         showUserLocation: false
       }));
 
-      this.map.addControl(new HellowWorldControl());
+
+      //*
+      //Load all the neighbor data
+      //*
+      this.neighborData = (await axios.get("https://s3.amazonaws.com/spatial-data-web-support/neighbor-data.json.gz")).data
+      console.debug("neighborData", typeof this.neighborData)
+
 
     },
     methods: {
       initMyData() {
         this.map.addSource('alldata', {
           "type": "geojson",
-          "data": 'https://s3.amazonaws.com/spatial-data-web-support/alldata.json.gz'
+          "data": 'https://s3.amazonaws.com/spatial-data-web-support/allData.json.gz'
         });
 
         const layers = this.map.getStyle().layers;
@@ -249,40 +243,73 @@
         // this.map.addLayer(this.heatmapLayer, firstSymbolLayer);
         this.map.addLayer(this.circlesLayer, firstSymbolLayer);
         this.map.setFilter('circles-layer', ["all",
-            ["==", ["typeof", ["get", "assessment"]], "number"],
-            ["==", ["typeof", ["get", "appraisal"]], "number"],
-            ["==", ["typeof", ["get", "assessmentRatio"]], "number"],
+            // ["==", ["typeof", ["get", "assessment"]], "number"],
+            // ["==", ["typeof", ["get", "appraisal"]], "number"],
+            ["==", ["typeof", ["get", "relativeAppraisal"]], "number"],
           ]
         );
 
+        this.map.addSource('neighbors', {
+          "type": "geojson",
+          "data": {
+            "type": "FeatureCollection",
+            "features": []
+          }
+        });
+        for (let i = 0; i < layers.length; i++) {
+          if (layers[i].type === 'symbol') {
+            firstSymbolLayer = layers[i].id;
+            break;
+          }
+        }
+        this.map.addLayer({
+            "id": 'neighbor-layer',
+            "type": "circle",
+            "source": 'neighbors',
+            "minzoom": 5,
+            "paint": {
+              "circle-radius": 9,
+              "circle-color": "#cddc39",
+              "circle-stroke-color": "rgba(255, 255, 255, .2)",
+              "circle-stroke-width": 1,
+            }
+          }
+        );
+
         this.map.on('click', 'circles-layer', (e) => {
+          //*
+          //Make a popup and add it to the map
+          //*
+          let allProps = `<dl class="property-info">`;
+          for (let key in e.features[0].properties) {
+            if (e.features[0].properties.hasOwnProperty(key)) {
+              allProps += `
+              <dt class="term">${key}</dt>
+              <dd class="definition">${e.features[0].properties[key]}</dd>
+            `
+            }
+          }
+          allProps += `</dl>`;
+
           new mapboxgl.Popup()
             .setLngLat(e.features[0].geometry.coordinates)
-            .setHTML(`
-<b>Assessment</b>  ${e.features[0].properties.assessment}<br>
-<b>Appraisal</b>  ${e.features[0].properties.appraisal}<br>
-<b>Assessment Ratio:</b>  ${e.features[0].properties.assessmentRatio}<br>
-<b>Parcel ID:</b> ${e.features[0].properties.id} (${e.features[0].properties.lng}, ${e.features[0].properties.lat})`)
-            .addTo(this.map);
+            .setHTML(allProps).addTo(this.map);
+
+          //*
+          //Load the neighbors layer for this property
+          //*
+          const pid = e.features[0].properties.id;
+          console.debug(`Adding neighbors layer for parcel ${pid}`);
+          const neighbors = this.neighborData[pid];
+          if (neighbors) {
+            console.debug("Neighbors: ", JSON.stringify(neighbors));
+            this.map.getSource('neighbors').setData(neighbors);
+          }
         });
       }
     }
   }
 
-  class HellowWorldControl {
-    onAdd(map) {
-      this._map = map;
-      this._container = document.createElement('div');
-      this._container.className = 'mapboxgl-ctrl';
-      this._container.textContent = 'Hello, World!';
-      return this._container;
-    }
-
-    onRemove() {
-      this._container.parentNode.removeChild(this._container);
-      this._map = undefined;
-    }
-  }
 </script>
 
 <style scoped lang="scss">
@@ -311,6 +338,16 @@
     padding: 8px;
     border-radius: 4px;
     margin: 8px;
+  }
+
+  .property-info {
+    max-width: 20%;
+    overflow-y: scroll;
+    max-height: 10vh;
+
+    .term {
+      font-weight: bold;
+    }
   }
 
 </style>
